@@ -64,4 +64,22 @@ func Deploy(e endpoint) {
 }
 
 // call on endpoint delete
-func undeploy(e endpoint) {}
+func Undeploy(ruleName string) {
+	// TODO concurrency
+	for _, server := range servers {
+		for i, endpoint := range server.e.endpoints {
+			if endpoint.rule == ruleName {
+				server.e.mutex.Lock()
+				defer server.e.mutex.Unlock()
+				server.e.endpoints = remove(server.e.endpoints, i)
+				fmt.Printf("Removed rule %s\n", ruleName)
+				return
+			}
+		}
+	}
+}
+
+func remove[T any](s []T, i int) []T {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
+}

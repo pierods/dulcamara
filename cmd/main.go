@@ -63,7 +63,7 @@ func main() {
 		}
 	}
 	fmt.Println("mock files path:" + mockFilesPath)
-
+	mockFilesPath = strings.TrimSuffix(mockFilesPath, "/")
 	rules, err := readMockFiles(mockFilesPath)
 	if err != nil {
 		fmt.Println(err)
@@ -120,6 +120,7 @@ func fileEventHandler(event fsnotify.Event) {
 		fmt.Println("added/changed ", event.Name)
 
 	case event.Has(fsnotify.Remove):
-		fmt.Println("removed ", event.Name)
+		ruleName := event.Name[strings.LastIndex(event.Name, "/")+1:]
+		dulcamara.Undeploy(ruleName)
 	}
 }
