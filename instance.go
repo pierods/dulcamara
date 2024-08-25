@@ -36,10 +36,7 @@ func (s *server) handle(w http.ResponseWriter, r *http.Request) {
 var servers = map[string]*server{}
 
 func Deploy(e endpoint) {
-
-	// loop through servers (one could have modified a file with a new port, you would overlook old version if you went straight for map[[prt]])
-	// if endpoint found, undeploy()
-	// deploy new version
+	Undeploy(e.rule) // in case it's a rule modification
 	mockServer, serverExists := servers[e.port]
 	if !serverExists {
 		mockServer = &server{
@@ -63,7 +60,6 @@ func Deploy(e endpoint) {
 	fmt.Printf("added rule %s\n", e.rule)
 }
 
-// call on endpoint delete
 func Undeploy(ruleName string) {
 	for _, server := range servers {
 		for i, endpoint := range server.e.endpoints {
@@ -71,7 +67,7 @@ func Undeploy(ruleName string) {
 				server.e.mutex.Lock()
 				defer server.e.mutex.Unlock()
 				server.e.endpoints = remove(server.e.endpoints, i)
-				fmt.Printf("Removed rule %s\n", ruleName)
+				fmt.Printf("removed rule %s\n", ruleName)
 				return
 			}
 		}

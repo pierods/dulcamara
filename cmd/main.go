@@ -115,12 +115,23 @@ func fileEventHandler(event fsnotify.Event) {
 	if !strings.HasSuffix(event.Name, fileSuffix) {
 		return
 	}
+	ruleName := event.Name[strings.LastIndex(event.Name, "/")+1:]
+	rulePath := event.Name[:strings.LastIndex(event.Name, "/")]
 	switch {
 	case event.Has(fsnotify.Write):
-		fmt.Println("added/changed ", event.Name)
+		rule, err := readMockFile(rulePath, ruleName)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		endpoint, err := dulcamara.ParseRule(rule)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		dulcamara.Deploy(endpoint)
 
 	case event.Has(fsnotify.Remove):
-		ruleName := event.Name[strings.LastIndex(event.Name, "/")+1:]
 		dulcamara.Undeploy(ruleName)
 	}
 }
