@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/pierods/dulcamara"
 )
 
 const fileSuffix = ".mock"
@@ -21,17 +22,12 @@ func isDirectory(path string) bool {
 	return false
 }
 
-type rule struct {
-	name     string
-	response string
-}
-
-func readMockFiles(path string) ([]rule, error) {
+func readMockFiles(path string) ([]dulcamara.Rule, error) {
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		return []rule{}, err
+		return []dulcamara.Rule{}, err
 	}
-	var mocks []rule
+	var mocks []dulcamara.Rule
 
 	for _, entry := range entries {
 		if !entry.Type().IsRegular() || !strings.HasSuffix(entry.Name(), fileSuffix) {
@@ -48,12 +44,12 @@ func readMockFiles(path string) ([]rule, error) {
 	return mocks, nil
 }
 
-func readMockFile(path, name string) (rule, error) {
+func readMockFile(path, name string) (dulcamara.Rule, error) {
 	response, err := os.ReadFile(path + "/" + name)
 	if err != nil {
-		return rule{}, fmt.Errorf("error reading file %s:%w", path, err)
+		return dulcamara.Rule{}, fmt.Errorf("error reading file %s:%w", path, err)
 	}
-	return rule{name: name, response: string(response)}, nil
+	return dulcamara.Rule{Name: name, Response: string(response)}, nil
 }
 
 func main() {
@@ -73,7 +69,12 @@ func main() {
 		fmt.Println(err)
 	}
 	for _, rule := range rules {
-		parseRule(rule)
+		endpoint, err := dulcamara.ParseRule(rule)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		dulcamara.Deploy(endpoint)
 	}
 
 	watcher, err := fsnotify.NewWatcher()

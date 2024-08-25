@@ -1,4 +1,4 @@
-package main
+package dulcamara
 
 import (
 	"fmt"
@@ -28,7 +28,7 @@ func (s *server) handle(w http.ResponseWriter, r *http.Request) {
 
 var servers = map[string]*server{}
 
-func deploy(e endpoint) {
+func Deploy(e endpoint) {
 
 	// loop through servers (one could have modified a file with a new port, you would overlook old version if you went straight for map[[prt]])
 	// if endpoint found, undeploy()

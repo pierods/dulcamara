@@ -1,9 +1,14 @@
-package main
+package dulcamara
 
 import (
 	"fmt"
 	"strings"
 )
+
+type Rule struct {
+	Name     string
+	Response string
+}
 
 type endpoint struct {
 	rule     string
@@ -13,13 +18,13 @@ type endpoint struct {
 	response string
 }
 
-func parseRule(r rule) {
+func ParseRule(r Rule) (endpoint, error) {
 
 	e := endpoint{
-		rule: r.name,
+		rule: r.Name,
 	}
 
-	lines := strings.Split(r.response, "\n")
+	lines := strings.Split(r.Response, "\n")
 	parsingBody := false
 
 	for l, line := range lines {
@@ -36,8 +41,7 @@ func parseRule(r rule) {
 			continue
 		}
 		if len(fields) < 2 {
-			fmt.Printf("invalid rule %s - invalid line %d:%s\n", r.name, l, line)
-			return
+			return e, fmt.Errorf("invalid rule, skipping %s - invalid line %d:%s", r.Name, l, line)
 		}
 		switch fields[0] {
 		case "port":
@@ -47,15 +51,15 @@ func parseRule(r rule) {
 		case "path":
 			e.path = fields[1]
 		default:
-			fmt.Printf("unknown directive %s:%s - skipping\n", r.name, fields[1])
+			fmt.Printf("unknown directive %s:%s - skipping\n", r.Name, fields[1])
 		}
 	}
 	err := validateEndpoint(e)
 	if err != nil {
-		fmt.Printf("invalid rule, skipping. %s:%v\n", r.name, err)
-		return
+		return e, fmt.Errorf("invalid rule, skipping. %s:%v", r.Name, err)
+
 	}
-	deploy(e)
+	return e, nil
 }
 
 func validateEndpoint(e endpoint) error {
