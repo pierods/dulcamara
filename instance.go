@@ -4,19 +4,26 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 )
 
 type server struct {
+	e concurrentEndpoints
+	s *http.Server
+}
+
+type concurrentEndpoints struct {
+	mutex     sync.RWMutex
 	endpoints []endpoint
-	s         *http.Server
 }
 
 func (s *server) handle(w http.ResponseWriter, r *http.Request) {
 	method := r.Method
 	path := r.URL
 	fmt.Printf("got request with method %s for path %s\n", method, path)
-	//TODO concurrency
-	for _, endpoint := range s.endpoints {
+	s.e.mutex.RLock()
+	defer s.e.mutex.RUnlock()
+	for _, endpoint := range s.e.endpoints {
 		if r.URL.String() == endpoint.path && r.Method == endpoint.method {
 			fmt.Printf("matched rule %s\n", endpoint.rule)
 			io.WriteString(w, endpoint.response)
@@ -36,7 +43,7 @@ func Deploy(e endpoint) {
 	mockServer, serverExists := servers[e.port]
 	if !serverExists {
 		mockServer = &server{
-			endpoints: []endpoint{e},
+			e: concurrentEndpoints{endpoints: []endpoint{e}},
 			s: &http.Server{
 				Addr: ":" + e.port,
 			},
@@ -49,8 +56,9 @@ func Deploy(e endpoint) {
 		}()
 		servers[e.port] = mockServer
 	} else {
-		//TODO concurrency
-		mockServer.endpoints = append(mockServer.endpoints, e)
+		mockServer.e.mutex.Lock()
+		defer mockServer.e.mutex.Unlock()
+		mockServer.e.endpoints = append(mockServer.e.endpoints, e)
 	}
 	fmt.Printf("added rule %s\n", e.rule)
 }
