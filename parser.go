@@ -20,29 +20,39 @@ func parseRule(r rule) {
 	}
 
 	lines := strings.Split(r.response, "\n")
+	parsingBody := false
+
 	for l, line := range lines {
-		if len(line) == 0 {
+		if parsingBody {
+			e.response += line
 			continue
 		}
-		split := strings.SplitN(line, " ", 2)
-		if len(split) < 2 || split[1] == "" {
-			fmt.Printf("invalid rule %s: invalid line %d:%s\n", r.name, l, line)
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		if fields[0] == "--response" {
+			parsingBody = true
+			continue
+		}
+		if len(fields) < 2 {
+			fmt.Printf("invalid rule %s - invalid line %d:%s\n", r.name, l, line)
 			return
 		}
-		switch split[0] {
+		switch fields[0] {
 		case "port":
-			e.port = strings.TrimSpace(split[1])
+			e.port = fields[1]
 		case "method":
-			e.method = strings.TrimSpace(split[1])
+			e.method = fields[1]
 		case "path":
-			e.path = strings.TrimSpace(split[1])
-		case "response":
-			e.response = split[1]
+			e.path = fields[1]
+		default:
+			fmt.Printf("unknown directive %s:%s - skipping\n", r.name, fields[1])
 		}
 	}
 	err := validateEndpoint(e)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("invalid rule, skipping. %s:%v\n", r.name, err)
 		return
 	}
 	deploy(e)
@@ -51,6 +61,9 @@ func parseRule(r rule) {
 func validateEndpoint(e endpoint) error {
 	if e.port == "" {
 		return fmt.Errorf("missing port")
+	}
+	if e.response == "" {
+		return fmt.Errorf("missing response")
 	}
 	return nil
 }
