@@ -65,7 +65,6 @@ func Deploy(e endpoint) {
 
 // call on endpoint delete
 func Undeploy(ruleName string) {
-	// TODO concurrency
 	for _, server := range servers {
 		for i, endpoint := range server.e.endpoints {
 			if endpoint.rule == ruleName {
